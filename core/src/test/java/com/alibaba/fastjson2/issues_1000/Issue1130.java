@@ -1,12 +1,14 @@
 package com.alibaba.fastjson2.issues_1000;
 
 import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.JSONPath;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Issue1130 {
@@ -49,5 +51,16 @@ public class Issue1130 {
         Object[] results = (Object[]) path.extract(raw);
         assertEquals("b", results[0]);
         assertEquals("a", results[1]);
+    }
+
+    @Test
+    public void testArrayParseCase6() {
+        String raw = "{\"arr1\":[\"a\"],\"numeric\":1,\"arr2\":[\"a\", null]}";
+        JSONPath path = JSONPath.of(new String[]{"$.arr2[1]", "$.arr2[1]"},
+                new Type[]{String.class, Integer.class});
+        Object eval = path.eval(JSONObject.parseObject(raw));
+
+        Object[] results = (Object[]) path.extract(raw);
+        assertArrayEquals(new Object[]{null, null}, results);
     }
 }
