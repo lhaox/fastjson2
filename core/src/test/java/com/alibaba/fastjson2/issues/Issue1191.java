@@ -19,8 +19,16 @@ public class Issue1191 {
 
     @Test
     public void test1() {
-        String json = "[0, 1, 2, 3]";
-        JSONPath path = JSONPath.of("$[5]", Integer.class);
+        String json = "[1,2,3]";
+        JSONPath path = JSONPath.of("$[6]", Integer.class);
+        Object result = path.extract(json);
+        assertNull(result);
+    }
+
+    @Test
+    public void test2() {
+        String json = "[]";
+        JSONPath path = JSONPath.of("$[6]", Integer.class);
         Object result = path.extract(json);
         assertNull(result);
     }
