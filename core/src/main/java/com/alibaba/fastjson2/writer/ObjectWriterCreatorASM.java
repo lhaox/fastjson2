@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
 
 import static com.alibaba.fastjson2.JSONWriter.Feature.*;
 import static com.alibaba.fastjson2.util.JDKUtils.UNSAFE_SUPPORT;
+import static com.alibaba.fastjson2.util.TypeUtils.isFunction;
 import static com.alibaba.fastjson2.writer.ObjectWriterProvider.TYPE_INT64_MASK;
 
 public class ObjectWriterCreatorASM
@@ -328,7 +329,7 @@ public class ObjectWriterCreatorASM
 
                     Class<?> returnType = method.getReturnType();
                     // skip function
-                    if (returnType.getName().startsWith("java.util.function.")) {
+                    if (isFunction(returnType)) {
                         return;
                     }
 
@@ -2143,6 +2144,11 @@ public class ObjectWriterCreatorASM
             mw.visitVarInsn(Opcodes.ALOAD, FIELD_VALUE);
             mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TYPE_FIELD_WRITER, "writeList", METHOD_DESC_WRITE_LIST, false);
         }
+
+        mw.visitVarInsn(Opcodes.ALOAD, JSON_WRITER);
+        mw.visitVarInsn(Opcodes.ALOAD, LIST);
+        mw.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TYPE_JSON_WRITER, "popPath", "(Ljava/lang/Object;)V", false);
+
         mw.visitJumpInsn(Opcodes.GOTO, notNull_);
 
         mw.visitLabel(null_);
@@ -3316,6 +3322,10 @@ public class ObjectWriterCreatorASM
 
         if (fieldClass == Double[].class) {
             return new FieldWriterObjectArrayField<>(fieldName, Float.class, ordinal, features, format, label, Double[].class, Double[].class, field);
+        }
+
+        if (isFunction(fieldClass)) {
+            return null;
         }
 
         return new FieldWriterObject(fieldName, ordinal, features, format, label, field.getGenericType(), fieldClass, field, null);

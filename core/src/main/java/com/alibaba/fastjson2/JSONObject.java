@@ -22,6 +22,7 @@ import java.util.function.Function;
 
 import static com.alibaba.fastjson2.JSONWriter.Feature.*;
 import static com.alibaba.fastjson2.util.AnnotationUtils.getAnnotations;
+import static com.alibaba.fastjson2.util.TypeUtils.toBigDecimal;
 
 public class JSONObject
         extends LinkedHashMap<String, Object>
@@ -993,10 +994,14 @@ public class JSONObject
                 return new BigDecimal((BigInteger) value);
             }
 
-            if (value instanceof Float
-                    || value instanceof Double) {
-                // Floating point number have no cached BigDecimal
-                return new BigDecimal(value.toString());
+            if (value instanceof Float) {
+                float floatValue = ((Float) value).floatValue();
+                return toBigDecimal(floatValue);
+            }
+
+            if (value instanceof Double) {
+                double doubleValue = ((Double) value).doubleValue();
+                return toBigDecimal(doubleValue);
             }
 
             long longValue = ((Number) value).longValue();
@@ -1005,12 +1010,7 @@ public class JSONObject
 
         if (value instanceof String) {
             String str = (String) value;
-
-            if (str.isEmpty() || "null".equalsIgnoreCase(str)) {
-                return null;
-            }
-
-            return new BigDecimal(str);
+            return toBigDecimal(str);
         }
 
         if (value instanceof Boolean) {
@@ -1194,7 +1194,7 @@ public class JSONObject
      * @param features features to be enabled in parsing
      * @since 2.0.7
      */
-    public <T> T to(TypeReference<?> typeReference, JSONReader.Feature... features) {
+    public <T> T to(TypeReference<T> typeReference, JSONReader.Feature... features) {
         return to(typeReference.getType(), features);
     }
 
@@ -1258,7 +1258,7 @@ public class JSONObject
      * @param features features to be enabled in parsing
      * @deprecated since 2.0.4, please use {@link #to(Type, JSONReader.Feature...)}
      */
-    public <T> T toJavaObject(TypeReference<?> typeReference, JSONReader.Feature... features) {
+    public <T> T toJavaObject(TypeReference<T> typeReference, JSONReader.Feature... features) {
         return to(typeReference, features);
     }
 
@@ -1429,7 +1429,7 @@ public class JSONObject
      * @throws JSONException If no suitable conversion method is found
      * @since 2.0.3
      */
-    public <T> T getObject(String key, TypeReference<?> typeReference, JSONReader.Feature... features) {
+    public <T> T getObject(String key, TypeReference<T> typeReference, JSONReader.Feature... features) {
         return getObject(key, typeReference.type, features);
     }
 
@@ -1959,8 +1959,9 @@ public class JSONObject
     /**
      * See {@link JSON#parseObject} for details
      */
-    public static <T> T parseObject(String text, TypeReference<?> typeReference, JSONReader.Feature... features) {
-        return JSON.parseObject(text, typeReference, features);
+    @SuppressWarnings("unchecked")
+    public static <T> T parseObject(String text, TypeReference<T> typeReference, JSONReader.Feature... features) {
+        return (T) JSON.parseObject(text, typeReference, features);
     }
 
     /**

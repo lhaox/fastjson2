@@ -25,6 +25,9 @@ public class DateUtils {
     public static final ZoneRules SHANGHAI_ZONE_RULES = SHANGHAI_ZONE_ID.getRules();
 
     static DateTimeFormatter DATE_TIME_FORMATTER_34;
+    static DateTimeFormatter DATE_TIME_FORMATTER_COOKIE;
+    static DateTimeFormatter DATE_TIME_FORMATTER_COOKIE_LOCAL;
+    static DateTimeFormatter DATE_TIME_FORMATTER_RFC_2822;
 
     static final int LOCAL_EPOCH_DAY;
     static {
@@ -2350,6 +2353,8 @@ public class DateUtils {
             throw new DateTimeParseException("illegal input " + str, str, 0);
         }
 
+        String zoneIdStr = null;
+
         char c0 = str.charAt(0);
         char c1 = str.charAt(1);
         char c2 = str.charAt(2);
@@ -3046,6 +3051,45 @@ public class DateUtils {
             S8 = '0';
             zoneIdBegin = 28;
             isTimeZone = c28 == '|';
+        } else if (len == 28 && c3 == ' ' && c7 == ' ' && c10 == ' ' && c13 == ':' && c16 == ':' && c19 == ' ' && c23 == ' ') {
+            int month = DateUtils.month(c4, c5, c6);
+            if (month > 0) {
+                m0 = (char) ('0' + month / 10);
+                m1 = (char) ('0' + (month % 10));
+            } else {
+                m0 = '0';
+                m1 = '0';
+            }
+
+            d0 = c8;
+            d1 = c9;
+
+            h0 = c11;
+            h1 = c12;
+
+            i0 = c14;
+            i1 = c15;
+
+            s0 = c17;
+            s1 = c18;
+
+            y0 = c24;
+            y1 = c25;
+            y2 = c26;
+            y3 = c27;
+
+            S0 = '0';
+            S1 = '0';
+            S2 = '0';
+            S3 = '0';
+            S4 = '0';
+            S5 = '0';
+            S6 = '0';
+            S7 = '0';
+            S8 = '0';
+            zoneIdBegin = 19;
+            zoneIdStr = str.substring(20, 23);
+            isTimeZone = false;
         } else if (len == 28 && c3 == ',' && c4 == ' ' && c6 == ' ' && c10 == ' ' && c15 == ' '
                 && c18 == ':' && c21 == ':' && c24 == ' ') {
             // RFC 1123
@@ -3197,10 +3241,23 @@ public class DateUtils {
             S8 = '0';
             zoneIdBegin = 17;
             isTimeZone = false;
+        } else if ((len == 32 && c6 == ',' && c7 == ' ' && c10 == '-' && c14 == '-' && c19 == ' ' && c22 == ':' && c25 == ':' && str.charAt(28) == ' ')
+                || (len == 33 && c7 == ',' && c8 == ' ' && c11 == '-' && c15 == '-' && c20 == ' ' && c23 == ':' && c26 == ':' && str.charAt(29) == ' ')
+                || (len == 34 && c8 == ',' && c9 == ' ' && c12 == '-' && c16 == '-' && c21 == ' ' && c24 == ':' && c27 == ':' && str.charAt(30) == ' ')
+                || (len == 35 && c9 == ',' && c10 == ' ' && c13 == '-' && c17 == '-' && c22 == ' ' && c25 == ':' && c28 == ':' && str.charAt(31) == ' ')
+        ) {
+            return parseZonedDateTimeCookie(str);
         } else if (len == 34) {
             DateTimeFormatter formatter = DATE_TIME_FORMATTER_34;
             if (formatter == null) {
                 formatter = DATE_TIME_FORMATTER_34 = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss O yyyy");
+            }
+            return ZonedDateTime.parse(str, formatter);
+        } else if (len == 31 && str.charAt(3) == ',') {
+            DateTimeFormatter formatter;
+            formatter = DATE_TIME_FORMATTER_RFC_2822;
+            if (formatter == null) {
+                formatter = DATE_TIME_FORMATTER_RFC_2822 = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
             }
             return ZonedDateTime.parse(str, formatter);
         } else {
@@ -3247,17 +3304,18 @@ public class DateUtils {
             if (first == 'Z') {
                 zoneId = UTC;
             } else {
-                String zoneIdStr;
-                if (first == '+' || first == '-') {
-                    zoneIdStr = str.substring(zoneIdBegin, len);
-                    //                    zoneIdStr = new String(chars, zoneIdBegin, len - zoneIdBegin);
-                } else if (first == ' ') {
-                    zoneIdStr = str.substring(zoneIdBegin + 1, len);
-                } else { // '[
-                    if (zoneIdBegin < len) {
-                        zoneIdStr = str.substring(zoneIdBegin + 1, len - 1);
-                    } else {
-                        zoneIdStr = null;
+                if (zoneIdStr == null) {
+                    if (first == '+' || first == '-') {
+                        zoneIdStr = str.substring(zoneIdBegin, len);
+                        //                    zoneIdStr = new String(chars, zoneIdBegin, len - zoneIdBegin);
+                    } else if (first == ' ') {
+                        zoneIdStr = str.substring(zoneIdBegin + 1, len);
+                    } else { // '[
+                        if (zoneIdBegin < len) {
+                            zoneIdStr = str.substring(zoneIdBegin + 1, len - 1);
+                        } else {
+                            zoneIdStr = null;
+                        }
                     }
                 }
                 zoneId = getZoneId(zoneIdStr, defaultZoneId);
@@ -3265,6 +3323,26 @@ public class DateUtils {
         }
 
         return ZonedDateTime.ofLocal(ldt, zoneId, null);
+    }
+
+    private static ZonedDateTime parseZonedDateTimeCookie(String str) {
+        if (str.endsWith(" CST")) {
+            DateTimeFormatter formatter = DATE_TIME_FORMATTER_COOKIE_LOCAL;
+            if (formatter == null) {
+                formatter = DateTimeFormatter.ofPattern("EEEE, dd-MMM-yyyy HH:mm:ss");
+                DATE_TIME_FORMATTER_COOKIE_LOCAL = formatter;
+            }
+            String strLocalDateTime = str.substring(0, str.length() - 4);
+            LocalDateTime ldt = LocalDateTime.parse(strLocalDateTime, formatter);
+            return ZonedDateTime.of(ldt, DateUtils.SHANGHAI_ZONE_ID);
+        }
+
+        DateTimeFormatter formatter = DATE_TIME_FORMATTER_COOKIE;
+        if (formatter == null) {
+            formatter = DateTimeFormatter.ofPattern("EEEE, dd-MMM-yyyy HH:mm:ss zzz");
+            DATE_TIME_FORMATTER_COOKIE = formatter;
+        }
+        return ZonedDateTime.parse(str, formatter);
     }
 
     public static ZoneId getZoneId(String zoneIdStr, ZoneId defaultZoneId) {
@@ -3276,6 +3354,8 @@ public class DateUtils {
         int p0, p1;
         if ("000".equals(zoneIdStr)) {
             zoneId = ZoneOffset.UTC;
+        } else if ("CST".equals(zoneIdStr)) {
+            zoneId = SHANGHAI_ZONE_ID;
         } else if ((p0 = zoneIdStr.indexOf('[')) > 0 && (p1 = zoneIdStr.indexOf(']', p0)) > 0) {
             String str = zoneIdStr.substring(p0 + 1, p1);
             zoneId = ZoneId.of(str);

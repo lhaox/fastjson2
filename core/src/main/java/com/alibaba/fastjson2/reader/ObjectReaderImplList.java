@@ -41,6 +41,11 @@ public final class ObjectReaderImplList
     volatile boolean instanceError;
 
     public static ObjectReader of(Type type, Class listClass, long features) {
+        if (listClass == type && "".equals(listClass.getSimpleName())) {
+            type = listClass.getGenericSuperclass();
+            listClass = listClass.getSuperclass();
+        }
+
         Type itemType = Object.class;
         Type rawType;
         if (type instanceof ParameterizedType) {
@@ -379,6 +384,10 @@ public final class ObjectReaderImplList
         } else if (listType == CLASS_UNMODIFIABLE_LIST) {
             list = new ArrayList();
             builder = (Function<List, List>) ((List items) -> Collections.unmodifiableList(items));
+        } else if (listType != null && EnumSet.class.isAssignableFrom(listType)) {
+            // maybe listType is java.util.RegularEnumSet or java.util.JumboEnumSet
+            list = new HashSet();
+            builder = (o) -> EnumSet.copyOf((Collection) o);
         } else if (listType != null && listType != this.listType) {
             try {
                 list = (Collection) listType.newInstance();
@@ -387,6 +396,18 @@ public final class ObjectReaderImplList
             }
         } else {
             list = (Collection) createInstance(jsonReader.getContext().getFeatures() | features);
+        }
+
+        ObjectReader itemObjectReader = this.itemObjectReader;
+        Type itemType = this.itemType;
+        if (fieldType != null && fieldType != listType && fieldType instanceof ParameterizedType) {
+            Type[] actualTypeArguments = ((ParameterizedType) fieldType).getActualTypeArguments();
+            if (actualTypeArguments.length == 1) {
+                itemType = actualTypeArguments[0];
+                if (itemType != this.itemType) {
+                    itemObjectReader = jsonReader.getObjectReader(itemType);
+                }
+            }
         }
 
         for (int i = 0; i < entryCnt; ++i) {
@@ -470,7 +491,7 @@ public final class ObjectReaderImplList
         }
 
         if (!jsonReader.nextIfMatch('[')) {
-            if (itemClass != Object.class && itemObjectReader != null) {
+            if ((itemClass != Object.class && itemObjectReader != null) || (itemClass == Object.class && jsonReader.isObject())) {
                 Object item = itemObjectReader.readObject(jsonReader, itemType, 0, 0);
                 list.add(item);
                 if (builder != null) {
@@ -480,6 +501,18 @@ public final class ObjectReaderImplList
             }
 
             throw new JSONException(jsonReader.info());
+        }
+
+        ObjectReader itemObjectReader = this.itemObjectReader;
+        Type itemType = this.itemType;
+        if (fieldType != null && fieldType != listType && fieldType instanceof ParameterizedType) {
+            Type[] actualTypeArguments = ((ParameterizedType) fieldType).getActualTypeArguments();
+            if (actualTypeArguments.length == 1) {
+                itemType = actualTypeArguments[0];
+                if (itemType != this.itemType) {
+                    itemObjectReader = jsonReader.getObjectReader(itemType);
+                }
+            }
         }
 
         for (int i = 0; ; ++i) {

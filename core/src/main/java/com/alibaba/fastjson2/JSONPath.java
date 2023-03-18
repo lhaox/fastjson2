@@ -439,6 +439,11 @@ public abstract class JSONPath {
         return JSONPathTyped.of(jsonPath, type);
     }
 
+    public static JSONPath of(String path, Type type, Feature... features) {
+        JSONPath jsonPath = of(path, features);
+        return JSONPathTyped.of(jsonPath, type);
+    }
+
     /**
      * create multi-path jsonpath
      *
@@ -729,7 +734,7 @@ public abstract class JSONPath {
             }
         }
 
-        if (sameMultiLength) {
+        if (sameMultiLength && paths.length > 1) {
             boolean samePrefix = true;
             boolean sameType = true;
             int lastIndex = firstMulti.segments.size() - 1;
@@ -738,8 +743,21 @@ public abstract class JSONPath {
             for (int i = 0; i < lastIndex; i++) {
                 JSONPathSegment segment = firstMulti.segments.get(i);
                 for (int j = 1; j < paths.length; j++) {
-                    JSONPathMulti path = (JSONPathMulti) jsonPaths[j];
-                    if (!segment.equals(path.segments.get(i))) {
+                    JSONPath jsonPath = jsonPaths[j];
+
+                    JSONPathSegment segment1;
+                    if (jsonPath instanceof JSONPathMulti) {
+                        JSONPathMulti path = (JSONPathMulti) jsonPath;
+                        segment1 = path.segments.get(i);
+                    } else if (jsonPath instanceof JSONPathSingleName) {
+                        segment1 = ((JSONPathSingleName) jsonPath).segment;
+                    } else if (jsonPath instanceof JSONPathSingleIndex) {
+                        segment1 = ((JSONPathSingleIndex) jsonPath).segment;
+                    } else {
+                        segment1 = null;
+                    }
+
+                    if (!segment.equals(segment1)) {
                         samePrefix = false;
                         break;
                     }
@@ -1125,7 +1143,9 @@ public abstract class JSONPath {
 
     public enum Feature {
         AlwaysReturnList(1),
-        NullOnError(1 << 1);
+        NullOnError(1 << 1),
+        KeepNullValue(1 << 2);
+
         public final long mask;
 
         Feature(long mask) {

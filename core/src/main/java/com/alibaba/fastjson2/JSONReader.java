@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import static com.alibaba.fastjson2.JSONFactory.*;
 import static com.alibaba.fastjson2.JSONReader.BigIntegerCreator.BIG_INTEGER_CREATOR;
 import static com.alibaba.fastjson2.util.JDKUtils.*;
+import static com.alibaba.fastjson2.util.TypeUtils.toBigDecimal;
 
 public abstract class JSONReader
         implements Closeable {
@@ -1223,7 +1224,7 @@ public abstract class JSONReader
                 zdt = ZonedDateTime.ofLocal(ldt, context.getZoneId(), null);
             } else if (len >= 20) {
                 zdt = readZonedDateTimeX(len);
-                if (zdt == null && len == 34) {
+                if (zdt == null && (len >= 32 && len <= 35)) {
                     String str = readString();
                     zdt = DateUtils.parseZonedDateTime(str, null);
                 }
@@ -1259,13 +1260,21 @@ public abstract class JSONReader
         }
 
         if (format != null && !format.isEmpty()) {
+            if ("yyyy-MM-dd HH:mm:ss".equals(format)) {
+                if ((str.length() < 4 || str.charAt(4) != '-') && IOUtils.isNumber(str)) {
+                    return Long.parseLong(str);
+                }
+
+                return DateUtils.parseMillis19(str, null);
+            }
+
             SimpleDateFormat utilFormat = new SimpleDateFormat(format);
             try {
                 return utilFormat
                         .parse(str)
                         .getTime();
             } catch (ParseException e) {
-                throw new JSONException("parse date error, " + str + ", expect format " + utilFormat);
+                throw new JSONException("parse date error, " + str + ", expect format " + utilFormat.toPattern());
             }
         }
         if ("0000-00-00T00:00:00".equals(str)
@@ -1852,7 +1861,7 @@ public abstract class JSONReader
 
         List list = new ArrayList();
         if (!nextIfMatch('[')) {
-            throw new JSONException("syntax error : " + ch);
+            throw new JSONException(info("syntax error : " + ch));
         }
 
         boolean fieldBased = (context.features & Feature.FieldBased.mask) != 0;
@@ -2179,19 +2188,19 @@ public abstract class JSONReader
                 if (exponent != 0) {
                     String doubleStr = decimal.toPlainString() + "E" + exponent;
                     double doubleValue = Double.parseDouble(doubleStr);
-                    return BigDecimal.valueOf(doubleValue);
+                    return toBigDecimal(doubleValue);
                 }
 
                 return decimal;
             }
             case JSON_TYPE_BIG_DEC: {
-                return new BigDecimal(stringValue);
+                return toBigDecimal(stringValue);
             }
             case JSON_TYPE_BOOL:
                 return boolValue ? BigDecimal.ONE : BigDecimal.ZERO;
             case JSON_TYPE_STRING: {
                 try {
-                    return new BigDecimal(stringValue);
+                    return toBigDecimal(stringValue);
                 } catch (NumberFormatException ex) {
                     throw new JSONException(info("read decimal error, value " + stringValue), ex);
                 }
@@ -2451,7 +2460,7 @@ public abstract class JSONReader
             }
             case JSON_TYPE_BIG_DEC: {
                 if (scale > 0) {
-                    return new BigDecimal(stringValue);
+                    return toBigDecimal(stringValue);
                 } else {
                     return new BigInteger(stringValue);
                 }
@@ -2564,7 +2573,7 @@ public abstract class JSONReader
             }
 
             if (val instanceof String) {
-                return new BigDecimal((String) val);
+                return toBigDecimal((String) val);
             }
         }
         return null;

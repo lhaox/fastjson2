@@ -582,6 +582,14 @@ public class ObjectReaderBaseModule
                             }
                             break;
                         }
+                        case "autoTypeBeforeHandler":
+                        case "autoTypeCheckHandler": {
+                            Class<?> autoTypeCheckHandler = (Class) result;
+                            if (JSONReader.AutoTypeBeforeHandler.class.isAssignableFrom(autoTypeCheckHandler)) {
+                                beanInfo.autoTypeBeforeHandler = (Class<JSONReader.AutoTypeBeforeHandler>) autoTypeCheckHandler;
+                            }
+                            break;
+                        }
                         default:
                             break;
                     }
@@ -807,6 +815,9 @@ public class ObjectReaderBaseModule
                             processJacksonJsonAlias(fieldInfo, annotation);
                         }
                         break;
+                    case "com.google.gson.annotations.SerializedName":
+                        processGsonSerializedName(fieldInfo, annotation);
+                        break;
                     default:
                         break;
                 }
@@ -922,6 +933,9 @@ public class ObjectReaderBaseModule
                         if (useJacksonAnnotation) {
                             processJacksonJsonAlias(fieldInfo, annotation);
                         }
+                        break;
+                    case "com.google.gson.annotations.SerializedName":
+                        processGsonSerializedName(fieldInfo, annotation);
                         break;
                     default:
                         break;
@@ -1892,14 +1906,6 @@ public class ObjectReaderBaseModule
                     //
                 }
             }
-
-            if (objectClass.isInterface()) {
-                BeanInfo beanInfo = new BeanInfo();
-                annotationProcessor.getBeanInfo(beanInfo, objectClass);
-                if (beanInfo.seeAlso != null && beanInfo.seeAlso.length == 0) {
-                    return new ObjectReaderInterfaceImpl(type);
-                }
-            }
         }
 
         if (type instanceof ParameterizedType) {
@@ -2071,6 +2077,8 @@ public class ObjectReaderBaseModule
                 return JdbcSupport.createTimestampReader((Class) type, null, null);
             case "java.sql.Date":
                 return JdbcSupport.createDateReader((Class) type, null, null);
+            case "java.util.RegularEnumSet":
+                return ObjectReaderImplList.INSTANCE;
             case "org.joda.time.Chronology":
                 return JodaSupport.createChronologyReader((Class) type);
             case "org.joda.time.LocalDate":

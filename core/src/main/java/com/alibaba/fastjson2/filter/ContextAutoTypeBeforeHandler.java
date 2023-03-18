@@ -59,6 +59,8 @@ public class ContextAutoTypeBeforeHandler
             Currency.class,
             BitSet.class,
             EnumSet.class,
+            // this is java.util.RegularEnumSet, java.util.JumboEnumSet need add manually ?
+            EnumSet.noneOf(TimeUnit.class).getClass(),
 
             Date.class,
             Calendar.class,
@@ -92,6 +94,7 @@ public class ContextAutoTypeBeforeHandler
             Collections.unmodifiableMap(new HashMap<>()).getClass(),
             Collections.unmodifiableNavigableMap(new TreeMap<>()).getClass(),
             Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
+            Arrays.asList().getClass(),
 
             Map.class,
             HashMap.class,
@@ -132,7 +135,7 @@ public class ContextAutoTypeBeforeHandler
             StringIndexOutOfBoundsException.class,
             TypeNotPresentException.class,
             VerifyError.class,
-            StackTraceElement.class,
+            StackTraceElement.class
     };
 
     final long[] acceptHashCodes;

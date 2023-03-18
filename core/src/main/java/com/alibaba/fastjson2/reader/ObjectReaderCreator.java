@@ -27,6 +27,7 @@ import java.util.function.*;
 
 import static com.alibaba.fastjson2.codec.FieldInfo.JSON_AUTO_WIRED_ANNOTATED;
 import static com.alibaba.fastjson2.util.JDKUtils.UNSAFE_SUPPORT;
+import static com.alibaba.fastjson2.util.TypeUtils.isFunction;
 
 public class ObjectReaderCreator {
     public static final boolean JIT = !JDKUtils.ANDROID && !JDKUtils.GRAAL;
@@ -1135,7 +1136,7 @@ public class ObjectReaderCreator {
 
         Supplier<T> creator = createSupplier(objectClass);
         JSONSchema jsonSchema = JSONSchema.of(JSON.parseObject(beanInfo.schema), objectClass);
-        return createObjectReader(
+        ObjectReader<T> objectReader = createObjectReader(
                 objectClass,
                 beanInfo.typeKey,
                 beanInfo.readerFeatures,
@@ -1143,6 +1144,25 @@ public class ObjectReaderCreator {
                 creator,
                 null,
                 fieldReaderArray);
+
+        if (objectReader instanceof ObjectReaderBean) {
+            JSONReader.AutoTypeBeforeHandler beforeHandler = null;
+            if (beanInfo.autoTypeBeforeHandler != null) {
+                try {
+                    Constructor constructor = beanInfo.autoTypeBeforeHandler.getDeclaredConstructor();
+                    constructor.setAccessible(true);
+                    beforeHandler = (JSONReader.AutoTypeBeforeHandler) constructor.newInstance();
+                } catch (Exception ignored) {
+                    // ignored
+                }
+            }
+
+            if (beforeHandler != null) {
+                ((ObjectReaderBean<T>) objectReader).setAutoTypeBeforeHandler(beforeHandler);
+            }
+        }
+
+        return objectReader;
     }
 
     public <T> FieldReader[] createFieldReaders(Class<T> objectClass) {
@@ -1365,7 +1385,7 @@ public class ObjectReaderCreator {
         Class fieldClass = method.getParameterTypes()[0];
 
         // skip function
-        if (fieldClass.getName().startsWith("java.util.function.")) {
+        if (isFunction(fieldClass)) {
             return;
         }
 
@@ -2779,6 +2799,11 @@ public class ObjectReaderCreator {
             } else if (fieldClass == BigInteger.class) {
                 ObjectReader objectReader = provider.getObjectReader(BigInteger.class);
                 if (objectReader != ObjectReaderImplBigInteger.INSTANCE) {
+                    initReader = objectReader;
+                }
+            } else if (fieldClass == Date.class) {
+                ObjectReader objectReader = provider.getObjectReader(Date.class);
+                if (objectReader != ObjectReaderImplDate.INSTANCE) {
                     initReader = objectReader;
                 }
             }

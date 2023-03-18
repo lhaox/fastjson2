@@ -34,6 +34,7 @@ public abstract class FieldReader<T>
 
     volatile JSONPath referenceCache;
     final boolean noneStaticMemberClass;
+    final boolean readOnly;
 
     Type itemType;
     Class itemClass;
@@ -83,6 +84,14 @@ public abstract class FieldReader<T>
         this.schema = schema;
         this.method = method;
         this.field = field;
+
+        boolean readOnly = false;
+        if (method != null && method.getParameterCount() == 0) {
+            readOnly = true;
+        } else if (field != null && Modifier.isFinal(field.getModifiers())) {
+            readOnly = true;
+        }
+        this.readOnly = readOnly;
 
         long fieldOffset = -1L;
         if (field != null && JDKUtils.UNSAFE_SUPPORT && (features & FieldInfo.DISABLE_UNSAFE) == 0) {
@@ -241,19 +250,34 @@ public abstract class FieldReader<T>
                 Class<?> thisParamType = this.method.getParameterTypes()[0];
                 Class<?> otherParamType = o.method.getParameterTypes()[0];
 
-                if (thisParamType.isAssignableFrom(otherParamType)) {
+                if (thisParamType != otherParamType) {
+                    if (thisParamType.isAssignableFrom(otherParamType)) {
+                        return 1;
+                    }
+
+                    if (otherParamType.isAssignableFrom(thisParamType)) {
+                        return -1;
+                    }
+
+                    if (thisParamType.isEnum() && (otherParamType == Integer.class || otherParamType == int.class)) {
+                        return 1;
+                    }
+
+                    if (otherParamType.isEnum() && (thisParamType == Integer.class || thisParamType == int.class)) {
+                        return -1;
+                    }
+                }
+            }
+
+            String thisMethodName = this.method.getName();
+            String otherMethodName = o.method.getName();
+            if (!thisMethodName.equals(otherMethodName)) {
+                String thisName = BeanUtils.setterName(thisMethodName, null);
+                String otherName = BeanUtils.setterName(otherMethodName, null);
+                if (this.fieldName.equals(thisName) && !o.fieldName.equals(otherName)) {
                     return 1;
                 }
-
-                if (otherParamType.isAssignableFrom(thisParamType)) {
-                    return -1;
-                }
-
-                if (thisParamType.isEnum() && (otherParamType == Integer.class || otherParamType == int.class)) {
-                    return 1;
-                }
-
-                if (otherParamType.isEnum() && (thisParamType == Integer.class || thisParamType == int.class)) {
+                if (o.fieldName.equals(otherName) && !this.fieldName.equals(thisName)) {
                     return -1;
                 }
             }
@@ -330,7 +354,7 @@ public abstract class FieldReader<T>
     }
 
     public boolean isReadOnly() {
-        return false;
+        return readOnly;
     }
 
     public ObjectReader getInitReader() {

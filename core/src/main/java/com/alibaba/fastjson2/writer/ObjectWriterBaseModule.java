@@ -380,6 +380,9 @@ public class ObjectWriterBaseModule
                             processJacksonJsonSerialize(fieldInfo, annotation);
                         }
                         break;
+                    case "com.google.gson.annotations.SerializedName":
+                        processGsonSerializedName(fieldInfo, annotation);
+                        break;
                     default:
                         break;
                 }
@@ -804,12 +807,14 @@ public class ObjectWriterBaseModule
                 String fieldName = BeanUtils.getterName(method, null);
 
                 char firstChar = fieldName.charAt(0);
+                char c1;
                 final String fieldName0;
                 if (firstChar >= 'A' && firstChar <= 'Z') {
                     char[] chars = fieldName.toCharArray();
                     chars[0] = (char) (firstChar + 32);
                     fieldName0 = new String(chars);
-                } else if (firstChar >= 'a' && firstChar <= 'z' && fieldName.length() > 2 && fieldName.charAt(1) == '_') {
+                } else if (firstChar >= 'a' && firstChar <= 'z' && fieldName.length() > 1
+                        && ((c1 = fieldName.charAt(1)) == '_' || (c1 >= '0' && c1 <= '9'))) {
                     char[] chars = fieldName.toCharArray();
                     chars[0] = (char) (firstChar - 32);
                     fieldName0 = new String(chars);

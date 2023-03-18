@@ -6,7 +6,7 @@
 
     <groupId>com.alibaba.fastjson2</groupId>
     <artifactId>fastjson2-parent</artifactId>
-    <version>2.0.25-SNAPSHOT</version>
+    <version>2.0.26-SNAPSHOT</version>
     <name>${project.artifactId}</name>
     <description>Fastjson is a JSON processor (JSON parser + JSON generator) written in Java</description>
     <packaging>pom</packaging>
@@ -33,7 +33,7 @@
 
         <fastjson1x.version>1.2.83</fastjson1x.version>
         <jackson.version>2.14.2</jackson.version>
-        <jetty.version>11.0.13</jetty.version>
+        <jetty.version>11.0.14</jetty.version>
         <jersey.version>2.39</jersey.version>
         <springframework5.version>5.3.25</springframework5.version>
         <springframework6.version>6.0.6</springframework6.version>
@@ -149,7 +149,7 @@
             <dependency>
                 <groupId>com.aliyun.odps</groupId>
                 <artifactId>odps-sdk-udf</artifactId>
-                <version>0.43.2-public</version>
+                <version>0.43.3-public</version>
             </dependency>
             <dependency>
                 <groupId>com.caucho</groupId>
@@ -171,7 +171,7 @@
             <dependency>
                 <groupId>com.github.erosb</groupId>
                 <artifactId>everit-json-schema</artifactId>
-                <version>1.14.1</version>
+                <version>1.14.2</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.gson</groupId>
@@ -187,7 +187,7 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-bom</artifactId>
                 <type>pom</type>
-                <version>3.22.1</version>
+                <version>3.22.2</version>
                 <scope>import</scope>
             </dependency>
             <dependency>
@@ -264,7 +264,7 @@
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-core</artifactId>
-                <version>3.5.3</version>
+                <version>3.5.4</version>
             </dependency>
             <dependency>
                 <groupId>io.springfox</groupId>
@@ -616,7 +616,9 @@
                                 com/alibaba/fastjson2/dubbo/GoogleProtobufBasic.java,
                                 com/alibaba/fastjson2/issues/Issue983.java,
                                 com/alibaba/fastjson2/protobuf/PersonOuterClass.java,
-                                com/alibaba/fastjson2/benchmark/protobuf/MediaContentHolder.java
+                                com/alibaba/fastjson2/benchmark/protobuf/MediaContentHolder.java,
+                                org/apache/dubbo/springboot/demo/BusinessException.java,
+                                com/alibaba/fastjson2/issues_1000/Issue1246.java
                             </excludes>
                         </configuration>
                     </execution>
@@ -717,7 +719,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M8</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>

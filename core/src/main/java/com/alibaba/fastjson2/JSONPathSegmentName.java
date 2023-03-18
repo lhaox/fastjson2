@@ -265,7 +265,7 @@ class JSONPathSegmentName
                 eval(itemContext);
                 Object val = itemContext.value;
 
-                if (val == null) {
+                if (val == null && (context.path.features & JSONPath.Feature.KeepNullValue.mask) == 0) {
                     continue;
                 }
 
@@ -525,6 +525,7 @@ class JSONPathSegmentName
                 if (jsonReader.isEnd()) {
                     return;
                 }
+                jsonReader.nextIfMatch(',');
                 // return object;
             }
 
