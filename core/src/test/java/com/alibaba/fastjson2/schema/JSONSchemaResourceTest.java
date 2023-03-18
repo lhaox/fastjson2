@@ -25,11 +25,16 @@ public class JSONSchemaResourceTest {
     public void test_draft2020_boolean_schema() {
         runTest("schema/draft2020-12/boolean_schema.json");
     }
-//
-//    @Test
-//    public void test_draft2020_const() {
-//        runTest("schema/draft2020-12/const.json");
-//    }
+
+    @Test
+    public void test_draft2020_const() {
+        runTest("schema/draft2020-12/const.json");
+    }
+
+    @Test
+    public void test_draft2020_contains() {
+        runTest("schema/draft2020-12/contains.json");
+    }
 
     @Test
     public void test_draft2020_enum() {
@@ -187,7 +192,7 @@ public class JSONSchemaResourceTest {
         JSONSchema schema;
         try {
             schema = JSONSchema.parseSchema(
-                    JSON.toJSONString(object));
+                    JSON.toJSONString(object, JSONWriter.Feature.WriteNulls));
         } catch (Exception ex) {
             throw new IllegalStateException("parse schema " + i + " error : " + object, ex);
         }

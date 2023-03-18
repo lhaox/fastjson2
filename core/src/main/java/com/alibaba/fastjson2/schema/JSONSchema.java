@@ -180,14 +180,14 @@ public abstract class JSONSchema {
         if (type == null) {
             Object[] enums = input.getObject("enum", Object[].class);
             if (enums != null) {
+                if (enums.length == 1) {
+                    return new ConstSchema(enums[0]);
+                }
                 return new EnumSchema(enums);
             }
 
-            Object constValue = input.get("const");
-            if (constValue instanceof String) {
-                return new ConstString((String) constValue);
-            } else if (constValue instanceof Integer || constValue instanceof Long) {
-                return new ConstLong(((Number) constValue).longValue());
+            if (input.containsKey("const")) {
+                return new ConstSchema(input.get("const"));
             }
 
             if (input.size() == 1) {
@@ -298,6 +298,7 @@ public abstract class JSONSchema {
                     || input.containsKey("items")
                     || input.containsKey("prefixItems")
                     || input.containsKey("uniqueItems")
+                    || input.containsKey("contains")
                     || input.containsKey("maxContains")
                     || input.containsKey("minContains")
             ) {
